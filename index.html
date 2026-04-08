@@ -124,8 +124,40 @@ main{flex:1;max-width:780px;width:100%;margin:0 auto;padding:16px 14px 90px;}
       <button class="lang-btn" onclick="setLang('fa')">فا</button>
     </div>
     <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+    <button class="theme-btn" onclick="openSettings()" title="Settings">⚙️</button>
   </div>
 </header>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-overlay" onclick="closeSettings()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;align-items:center;justify-content:center;"></div>
+<div id="settings-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:501;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(340px,90vw);box-shadow:0 8px 40px rgba(0,0,0,.25);">
+  <div style="font-size:16px;font-weight:600;margin-bottom:4px;" id="settings-title">Settings</div>
+  <div style="font-size:12px;color:var(--text2);margin-bottom:20px;" id="settings-sub">Label Tracker</div>
+
+  <div style="border-top:1px solid var(--border);padding-top:16px;">
+    <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text2);margin-bottom:12px;" id="settings-danger-lbl">Data</div>
+
+    <button onclick="confirmDeleteAll()" style="width:100%;background:#fef2f2;border:1.5px solid #fca5a5;color:#dc2626;font-family:var(--font);font-size:14px;font-weight:600;padding:13px;border-radius:10px;cursor:pointer;transition:all .14s;text-align:left;display:flex;align-items:center;gap:10px;" id="btn-delete-all">
+      <span style="font-size:18px;">🗑️</span>
+      <span id="delete-lbl">Delete All Data</span>
+    </button>
+    <div style="font-size:11px;color:var(--text2);margin-top:6px;padding-left:4px;" id="delete-desc">Clears all saved dates across all meals.</div>
+  </div>
+
+  <button onclick="closeSettings()" style="width:100%;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:14px;font-weight:500;padding:12px;border-radius:10px;cursor:pointer;margin-top:14px;" id="settings-close-btn">Close</button>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirm-overlay" onclick="closeConfirm()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;"></div>
+<div id="confirm-modal" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:601;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:min(320px,88vw);box-shadow:0 8px 40px rgba(0,0,0,.3);">
+  <div style="font-size:32px;text-align:center;margin-bottom:10px;">⚠️</div>
+  <div style="font-size:15px;font-weight:600;text-align:center;margin-bottom:6px;" id="confirm-title">Delete all data?</div>
+  <div style="font-size:13px;color:var(--text2);text-align:center;margin-bottom:20px;" id="confirm-body">This will permanently clear all dates you have entered for every meal. This cannot be undone.</div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="closeConfirm()" style="flex:1;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:14px;font-weight:500;padding:12px;border-radius:10px;cursor:pointer;" id="confirm-cancel-btn">Cancel</button>
+    <button onclick="deleteAllData()" style="flex:1;background:#dc2626;border:none;color:#fff;font-family:var(--font);font-size:14px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer;" id="confirm-delete-btn">Delete</button>
+  </div>
+</div>
 
 <main>
   <!-- SCREEN 1: MEALS -->
@@ -449,6 +481,59 @@ function showToast(msg){
   const el=document.getElementById('toast');
   el.textContent=msg; el.classList.add('show');
   setTimeout(()=>el.classList.remove('show'), 2000);
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+function openSettings(){
+  document.getElementById('settings-overlay').style.display='block';
+  document.getElementById('settings-modal').style.display='block';
+  applySettingsLabels();
+}
+function closeSettings(){
+  document.getElementById('settings-overlay').style.display='none';
+  document.getElementById('settings-modal').style.display='none';
+}
+function confirmDeleteAll(){
+  closeSettings();
+  document.getElementById('confirm-overlay').style.display='block';
+  document.getElementById('confirm-modal').style.display='block';
+  applySettingsLabels();
+}
+function closeConfirm(){
+  document.getElementById('confirm-overlay').style.display='none';
+  document.getElementById('confirm-modal').style.display='none';
+}
+function deleteAllData(){
+  allDates={};
+  selectedMeal=null;
+  currentScreen='meal';
+  try{ sessionStorage.removeItem('lblState'); }catch(e){}
+  closeConfirm();
+  renderMeals();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-meal').classList.add('active');
+  showToast(SETTINGS_T[lang]?.deleted || 'All data deleted');
+}
+
+const SETTINGS_T={
+  en:{title:'Settings',sub:'Label Tracker',danger:'Data',deleteBtn:'Delete All Data',deleteDesc:'Clears all saved dates across all meals.',close:'Close',confirmTitle:'Delete all data?',confirmBody:'This will permanently clear all dates entered for every meal. This cannot be undone.',cancel:'Cancel',deleteConfirm:'Delete',deleted:'All data deleted'},
+  es:{title:'Configuración',sub:'Label Tracker',danger:'Datos',deleteBtn:'Eliminar Todos los Datos',deleteDesc:'Borra todas las fechas guardadas de todas las comidas.',close:'Cerrar',confirmTitle:'¿Eliminar todos los datos?',confirmBody:'Esto borrará permanentemente todas las fechas ingresadas. No se puede deshacer.',cancel:'Cancelar',deleteConfirm:'Eliminar',deleted:'Datos eliminados'},
+  fr:{title:'Paramètres',sub:'Label Tracker',danger:'Données',deleteBtn:'Supprimer Toutes les Données',deleteDesc:'Efface toutes les dates enregistrées pour tous les plats.',close:'Fermer',confirmTitle:'Supprimer toutes les données ?',confirmBody:'Cela effacera définitivement toutes les dates saisies. Cette action est irréversible.',cancel:'Annuler',deleteConfirm:'Supprimer',deleted:'Données supprimées'},
+  fa:{title:'تنظیمات',sub:'Label Tracker',danger:'داده‌ها',deleteBtn:'حذف همه داده‌ها',deleteDesc:'همه تاریخ‌های ذخیره‌شده پاک می‌شوند.',close:'بستن',confirmTitle:'حذف همه داده‌ها؟',confirmBody:'این عمل تمام تاریخ‌های وارد شده را به طور دائمی پاک می‌کند.',cancel:'لغو',deleteConfirm:'حذف',deleted:'داده‌ها حذف شد'}
+};
+
+function applySettingsLabels(){
+  const s=SETTINGS_T[lang]||SETTINGS_T.en;
+  document.getElementById('settings-title').textContent=s.title;
+  document.getElementById('settings-sub').textContent=s.sub;
+  document.getElementById('settings-danger-lbl').textContent=s.danger;
+  document.getElementById('delete-lbl').textContent=s.deleteBtn;
+  document.getElementById('delete-desc').textContent=s.deleteDesc;
+  document.getElementById('settings-close-btn').textContent=s.close;
+  document.getElementById('confirm-title').textContent=s.confirmTitle;
+  document.getElementById('confirm-body').textContent=s.confirmBody;
+  document.getElementById('confirm-cancel-btn').textContent=s.cancel;
+  document.getElementById('confirm-delete-btn').textContent=s.deleteConfirm;
 }
 
 // ── PERSISTENCE ───────────────────────────────────────────────────────────────
