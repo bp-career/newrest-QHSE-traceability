@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Label Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg:#f4f5f7;--surface:#fff;--surface2:#eef0f4;--border:#d8dce6;
+  --accent:#2563eb;--accent-lt:#dbeafe;
+  --green:#16a34a;--green-lt:#dcfce7;--green-btn:#15803d;
+  --text:#1e2233;--text2:#6b7280;--red:#dc2626;
+  --radius:12px;--shadow:0 2px 8px rgba(0,0,0,.08);
+  --font:'IBM Plex Sans',sans-serif;
+}
+[data-theme=dark]{
+  --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3352;
+  --accent:#4f8ef7;--accent-lt:#1e3a6e;
+  --green:#3dd68c;--green-lt:#0d3b24;--green-btn:#22c55e;
+  --text:#e8eaf6;--text2:#8b91b5;--red:#f75b5b;
+  --shadow:0 2px 8px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column;transition:background .2s,color .2s;}
+
+/* HEADER */
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:100;box-shadow:var(--shadow);}
+.app-title{font-size:15px;font-weight:600;color:var(--accent);white-space:nowrap;}
+.header-right{display:flex;align-items:center;gap:6px;}
+.lang-bar{display:flex;gap:4px;}
+.lang-btn{background:transparent;border:1.5px solid var(--border);color:var(--text2);font-family:var(--font);font-size:11px;font-weight:500;padding:4px 8px;border-radius:6px;cursor:pointer;transition:all .14s;}
+.lang-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.theme-btn{background:var(--surface2);border:1.5px solid var(--border);color:var(--text);font-size:15px;width:34px;height:34px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* MAIN */
+main{flex:1;max-width:780px;width:100%;margin:0 auto;padding:16px 14px 90px;}
+.screen{display:none;}.screen.active{display:block;}
+
+/* STEP HEADER */
+.step-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.back-btn{background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:13px;font-weight:500;height:40px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .14s;box-shadow:var(--shadow);padding:0 14px;gap:5px;}
+.back-btn:hover{border-color:var(--accent);color:var(--accent);}
+.step-title{font-size:16px;font-weight:600;}
+.step-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+
+/* SECTION LABELS */
+.section-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-bottom:9px;margin-top:18px;}
+.section-lbl:first-child{margin-top:0;}
+.section-lbl.hot-lbl{color:#ef4444;}
+.section-lbl.cold-lbl{color:#3b82f6;}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-wrap input{width:100%;background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:15px;padding:12px 12px 12px 40px;border-radius:var(--radius);outline:none;box-shadow:var(--shadow);transition:border-color .14s;}
+.search-wrap input:focus{border-color:var(--accent);}
+.search-wrap input::placeholder{color:var(--text2);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:15px;pointer-events:none;}
+
+/* MEAL PILLS */
+.pill-grid{display:flex;flex-wrap:wrap;gap:7px;}
+.pill{background:var(--surface);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:14px;font-weight:500;padding:10px 16px;border-radius:100px;cursor:pointer;transition:all .14s;user-select:none;box-shadow:var(--shadow);}
+.pill:active{transform:scale(.96);}
+.meal-pill:hover{border-color:var(--accent);color:var(--accent);}
+
+/* CARD GRID — 2 columns */
+#date-cards{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 11px;box-shadow:var(--shadow);display:flex;flex-direction:column;}
+.card-ing-name{font-size:12px;font-weight:600;color:var(--green);margin-bottom:7px;display:block;line-height:1.3;}
+
+/* DATE ROW */
+.date-item{display:flex;align-items:center;gap:4px;margin-bottom:4px;flex-wrap:wrap;}
+.date-quick-btns{display:flex;gap:4px;flex-wrap:wrap;flex:1;align-items:center;}
+.qdate-btn{background:var(--surface2);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;font-weight:500;padding:5px 8px;border-radius:7px;cursor:pointer;transition:all .14s;white-space:nowrap;}
+.qdate-btn.chosen{background:var(--accent-lt);border-color:var(--accent);color:var(--accent);}
+.qdate-btn:active{transform:scale(.96);}
+.date-pick-input{background:var(--surface2);border:1.5px solid var(--border);color:var(--text);font-family:var(--font);font-size:11px;padding:5px 7px;border-radius:7px;outline:none;width:100%;margin-top:3px;transition:border-color .14s;color-scheme:light;}
+[data-theme=dark] .date-pick-input{color-scheme:dark;}
+.date-pick-input.chosen{border-color:var(--accent);}
+.date-pick-input:focus{border-color:var(--accent);}
+.date-pick-input.hidden{display:none;}
+.remove-date-btn{background:transparent;border:1.5px solid var(--border);color:var(--text2);font-size:12px;width:26px;height:26px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .14s;}
+.remove-date-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* ADD CONTAINER — green, sits at bottom of card */
+.add-date-btn{background:var(--green-lt);border:1.5px solid var(--green);color:var(--green-btn);font-family:var(--font);font-size:11px;font-weight:600;padding:5px 0;border-radius:7px;cursor:pointer;width:100%;text-align:center;transition:all .14s;margin-top:auto;padding-top:6px;}
+.add-date-btn:hover{background:var(--green);color:#fff;}
+.add-date-btn:active{transform:scale(.98);}
+[data-theme=dark] .add-date-btn{color:var(--green);}
+[data-theme=dark] .add-date-btn:hover{color:#fff;}
+
+/* PREVIEW */
+.section-lbl-preview{font-size:10px;font-weight:600;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-bottom:9px;margin-top:22px;}
+.summary-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 15px;font-size:12px;color:var(--text2);word-break:break-all;line-height:1.9;font-family:monospace;}
+
+/* COPY BAR — just copy button, full width */
+.copy-bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);max-width:780px;width:100%;background:var(--surface);border-top:1px solid var(--border);padding:11px 14px;z-index:100;box-shadow:0 -2px 12px rgba(0,0,0,.1);}
+.copy-btn{width:100%;background:var(--accent);border:none;color:#fff;font-family:var(--font);font-size:15px;font-weight:600;padding:15px;border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s;}
+.copy-btn:active{transform:scale(.98);}
+.copy-btn.copied{background:var(--green);}
+
+/* TOAST */
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--text);color:var(--bg);font-family:var(--font);font-size:13px;font-weight:500;padding:10px 18px;border-radius:8px;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:200;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* unsaved dot */
+.unsaved-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-left:6px;vertical-align:middle;}
+
+@media(min-width:560px){.pill{font-size:15px;padding:11px 20px;}.qdate-btn{font-size:12px;padding:5px 10px;}}
+</style>
+</head>
+<body data-theme="light">
+
+<header>
+  <span class="app-title">◈ Label Tracker</span>
+  <div class="header-right">
+    <div class="lang-bar">
+      <button class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" onclick="setLang('es')">ES</button>
+      <button class="lang-btn" onclick="setLang('fr')">FR</button>
+      <button class="lang-btn" onclick="setLang('fa')">فا</button>
+    </div>
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()">🌙</button>
+  </div>
+</header>
+
+<main>
+  <!-- SCREEN 1: MEALS -->
+  <div class="screen active" id="screen-meal">
+    <div class="section-lbl" id="lbl-s1">Select Meal</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="meal-search" placeholder="Search meals..." oninput="filterMeals()" autocomplete="off">
+    </div>
+    <div class="section-lbl cold-lbl" id="lbl-cold">❄️ Cold</div>
+    <div class="pill-grid" id="meal-grid-cold"></div>
+    <div class="section-lbl hot-lbl" id="lbl-hot" style="margin-top:16px;">🔥 Hot</div>
+    <div class="pill-grid" id="meal-grid-hot"></div>
+  </div>
+
+  <!-- SCREEN 2: DATES (goes straight here after meal selection) -->
+  <div class="screen" id="screen-dates">
+    <div class="step-header">
+      <button class="back-btn" onclick="goToScreen('meal')">← <span id="lbl-back">Back</span></button>
+      <div>
+        <div class="step-title" id="dates-meal-title"></div>
+        <div class="step-sub" id="lbl-s3">Set dates made for each container</div>
+      </div>
+    </div>
+    <div id="date-cards"></div>
+    <div class="section-lbl-preview" id="lbl-preview">Preview</div>
+    <div class="summary-box" id="summary-box"></div>
+  </div>
+</main>
+
+<div class="copy-bar">
+  <button class="copy-btn" id="copy-btn" onclick="copyOutput()">
+    <span>📋</span><span id="copy-label">Copy</span>
+  </button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── MEAL DATA ─────────────────────────────────────────────────────────────────
+const COLD_MEALS = new Set([
+  "Charcuterie Plate","Chicken Salad Sandwich","Coconut Chia w/ Mixed Berries",
+  "FF Cheese Plates","Smoked Turkey Croissant","Smoked Turkey Sandwich","Veg Caprese Sandwich"
+]);
+
+const MEALS = {
+  // COLD — alphabetical
+  "Charcuterie Plate":{emoji:"🧀",items:["Brooklyn Cured Salami","Castelvetrano Olives","Cornichon","Dried Apricot","Egg Halves","Gran Cru Square","Gran Queso Wedge","Grapes on Vine","Whole Almonds"]},
+  "Chicken Salad Sandwich":{emoji:"🥐",items:["Arugula","Chicken Salad","Croissant","Gran Queso","Sour Cherry Spread"]},
+  "Coconut Chia w/ Mixed Berries":{emoji:"🥥",items:["Coconut Chia Oatmeal","Mixed Berry Compote","Toasted Coconut"]},
+  "FF Cheese Plates":{emoji:"🍎",items:["Almonds","Chocolate","Dried Apricot","Gouda","Grapes","Green Apple","Red Apple","Sharp Cheddar"]},
+  "Smoked Turkey Croissant":{emoji:"🥐",items:["Arugula","Croissant","Gran Queso","Smoked Turkey Breast","Sweet Grain Mustard"]},
+  "Smoked Turkey Sandwich":{emoji:"🥪",items:["Arugula","Brioche Bun","Dijon Mayo","Gran Queso","Roma Tomato","Smoked Turkey Breast"]},
+  "Veg Caprese Sandwich":{emoji:"🫙",items:["Arugula","Brioche Bun","Fresh Mozzarella","Pesto Mayo","Roma Tomato"]},
+  // HOT — alphabetical
+  "Asparagus Sundried Tomato Quiche":{emoji:"🥧",items:["Andouille Sausage","Asparagus","Quiche","Swiss Cheese"]},
+  "Chicken Salad with Tarragon":{emoji:"🍗",items:["Arugula","Castelvetrano Olives","Grape Tomatoes","Haricot Vert","Hard Boiled Egg","Italian Parsley","Lemon","Seared Chicken Breast","Tarragon Potato Salad"]},
+  "French Toast with Orange Ricotta":{emoji:"🍞",items:["Cinnamon Maple Butter","French Toast","Orange Mascarpone","Strawberry Compote"]},
+  "Goat Cheese & Mushroom Stuffed Piquillo Peppers":{emoji:"🫑",items:["Bechamel Sauce","Extra Virgin Olive Oil","Italian Parsley","Stuffed Piquillo Peppers","Toasted Garlic Bomba Rice"]},
+  "John & Vinny Pork and Beef Meatballs":{emoji:"🍝",items:["Grits","Italian Parsley","Pork & Beef Meatballs","Ricotta"]},
+  "Jose Andres Spanish Omelet":{emoji:"🍳",items:["Italian Parsley","Pisto Manchego","Spanish Omelet"]},
+  "Mixed Berry Yogurt Bowl":{emoji:"🫐",items:["Greek Yogurt","Mixed Berry Compote","Pecan Granola"]},
+  "Shake Shack Burger":{emoji:"🍔",items:["American Cheese","Beef Patty","Martin's Potato Roll","Shake Shack Sauce"]},
+  "Short Ribs":{emoji:"🥩",items:["Garlic Thyme Mashed Potatoes","Kanni Demi Sauce","Roasted Oblique Cut Carrots","Scallion Bias Sliced","Short Rib"]},
+  "Shrimp and Grits":{emoji:"🍤",items:["Grits","Gulf Shrimp","Scallion","Spiced Creole Sauce"]},
+  "Smoked Salmon":{emoji:"🐟",items:["Capers","Caper Cream Cheese","Cucumber","Dill","Grape Tomatoes","Lemon","Pickled Red Onion","Smoked Salmon"]},
+  "Spinach Ravioli":{emoji:"🥣",items:["Artichoke & Zucchini Relish","Marinara Sauce","Parmesan","Spinach Ravioli"]},
+  "Three Cheese Manicotti with Tomato Butter Sauce":{emoji:"🧆",items:["Basil Pesto","Cherry Tomatoes","Three Cheese Manicotti","Tomato Butter Sauce"]},
+  "Vegetarian Salad with Tarragon Potato Salad":{emoji:"🥗",items:["Arugula","Castelvetrano Olives","Grape Tomatoes","Haricot Vert","Hard Boiled Egg","Italian Parsley","Lemon","Tarragon Potato Salad"]}
+};
+
+// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+const MEAL_T = {
+  es:{"Charcuterie Plate":"Tabla de Embutidos","Chicken Salad Sandwich":"Sándwich de Ensalada de Pollo","Coconut Chia w/ Mixed Berries":"Chía de Coco con Frutos Rojos","FF Cheese Plates":"Tabla de Quesos","Smoked Turkey Croissant":"Croissant de Pavo Ahumado","Smoked Turkey Sandwich":"Sándwich de Pavo Ahumado","Veg Caprese Sandwich":"Sándwich Caprese Vegetariano","Asparagus Sundried Tomato Quiche":"Quiche de Espárragos y Tomate Seco","Chicken Salad with Tarragon":"Ensalada de Pollo con Estragón","French Toast with Orange Ricotta":"Tostada Francesa con Ricotta de Naranja","Goat Cheese & Mushroom Stuffed Piquillo Peppers":"Pimientos Piquillo Rellenos","John & Vinny Pork and Beef Meatballs":"Albóndigas de Cerdo y Res","Jose Andres Spanish Omelet":"Tortilla Española José Andrés","Mixed Berry Yogurt Bowl":"Bol de Yogur con Frutos Rojos","Shake Shack Burger":"Hamburguesa Shake Shack","Short Ribs":"Costillas Cortas","Shrimp and Grits":"Camarones con Sémola","Smoked Salmon":"Salmón Ahumado","Spinach Ravioli":"Ravioli de Espinacas","Three Cheese Manicotti with Tomato Butter Sauce":"Manicotti de Tres Quesos","Vegetarian Salad with Tarragon Potato Salad":"Ensalada Vegetariana con Papa al Estragón"},
+  fr:{"Charcuterie Plate":"Plateau de Charcuterie","Chicken Salad Sandwich":"Sandwich Salade de Poulet","Coconut Chia w/ Mixed Berries":"Chia Coco aux Fruits Rouges","FF Cheese Plates":"Plateau de Fromages","Smoked Turkey Croissant":"Croissant Dinde Fumée","Smoked Turkey Sandwich":"Sandwich Dinde Fumée","Veg Caprese Sandwich":"Sandwich Caprese Végétarien","Asparagus Sundried Tomato Quiche":"Quiche Asperges Tomates Séchées","Chicken Salad with Tarragon":"Salade de Poulet à l'Estragon","French Toast with Orange Ricotta":"Pain Perdu Ricotta Orange","Goat Cheese & Mushroom Stuffed Piquillo Peppers":"Poivrons Piquillo Farcis Chèvre","John & Vinny Pork and Beef Meatballs":"Boulettes Porc et Bœuf","Jose Andres Spanish Omelet":"Omelette Espagnole José Andrés","Mixed Berry Yogurt Bowl":"Bol Yaourt Fruits Rouges","Shake Shack Burger":"Burger Shake Shack","Short Ribs":"Côtes Courtes","Shrimp and Grits":"Crevettes et Semoule","Smoked Salmon":"Saumon Fumé","Spinach Ravioli":"Ravioli aux Épinards","Three Cheese Manicotti with Tomato Butter Sauce":"Manicotti 3 Fromages Sauce Tomate","Vegetarian Salad with Tarragon Potato Salad":"Salade Végétarienne Pommes de Terre"},
+  fa:{"Charcuterie Plate":"بشقاب سرد گوشت","Chicken Salad Sandwich":"ساندویچ سالاد مرغ","Coconut Chia w/ Mixed Berries":"چیا نارگیل با توت مخلوط","FF Cheese Plates":"بشقاب پنیر","Smoked Turkey Croissant":"کروسان بوقلمون دودی","Smoked Turkey Sandwich":"ساندویچ بوقلمون دودی","Veg Caprese Sandwich":"ساندویچ کاپرزه گیاهی","Asparagus Sundried Tomato Quiche":"کیش مارچوبه و گوجه خشک","Chicken Salad with Tarragon":"سالاد مرغ با تاراگون","French Toast with Orange Ricotta":"نان فرانسوی با ریکوتا پرتقال","Goat Cheese & Mushroom Stuffed Piquillo Peppers":"فلفل پیکیو پر از پنیر بز","John & Vinny Pork and Beef Meatballs":"کوفته گوشت","Jose Andres Spanish Omelet":"املت اسپانیایی","Mixed Berry Yogurt Bowl":"کاسه ماست و توت","Shake Shack Burger":"برگر شیک شک","Short Ribs":"دنده کوتاه","Shrimp and Grits":"میگو و سمولینا","Smoked Salmon":"سالمون دودی","Spinach Ravioli":"راویولی اسفناج","Three Cheese Manicotti with Tomato Butter Sauce":"مانیکوتی سه پنیر","Vegetarian Salad with Tarragon Potato Salad":"سالاد گیاهی با سیب‌زمینی"}
+};
+
+const ING_T = {
+  es:{"Andouille Sausage":"Salchicha Andouille","Asparagus":"Espárragos","Quiche":"Quiche","Swiss Cheese":"Queso Suizo","Arugula":"Rúcula","Chicken Salad":"Ensalada de Pollo","Croissant":"Croissant","Gran Queso":"Gran Queso","Sour Cherry Spread":"Mermelada de Cereza","Coconut Chia Oatmeal":"Avena de Chía de Coco","Mixed Berry Compote":"Compota de Frutos Rojos","Toasted Coconut":"Coco Tostado","Almonds":"Almendras","Chocolate":"Chocolate","Dried Apricot":"Albaricoque Seco","Gouda":"Gouda","Grapes":"Uvas","Green Apple":"Manzana Verde","Red Apple":"Manzana Roja","Sharp Cheddar":"Cheddar Fuerte","Gran Queso Wedge":"Cuña Gran Queso","Smoked Turkey Breast":"Pechuga de Pavo Ahumado","Sweet Grain Mustard":"Mostaza de Granos","Brioche Bun":"Pan Brioche","Dijon Mayo":"Mayonesa Dijon","Roma Tomato":"Tomate Roma","Fresh Mozzarella":"Mozzarella Fresca","Pesto Mayo":"Mayonesa Pesto","Cinnamon Maple Butter":"Mantequilla de Canela y Maple","French Toast":"Tostada Francesa","Orange Mascarpone":"Mascarpone de Naranja","Strawberry Compote":"Compota de Fresa","Bechamel Sauce":"Salsa Bechamel","Extra Virgin Olive Oil":"Aceite de Oliva Virgen Extra","Italian Parsley":"Perejil Italiano","Stuffed Piquillo Peppers":"Pimientos Piquillo Rellenos","Toasted Garlic Bomba Rice":"Arroz Bomba con Ajo","Grits":"Sémola","Pork & Beef Meatballs":"Albóndigas","Ricotta":"Ricotta","Pisto Manchego":"Pisto Manchego","Spanish Omelet":"Tortilla Española","Greek Yogurt":"Yogur Griego","Pecan Granola":"Granola de Nuez","American Cheese":"Queso Americano","Beef Patty":"Hamburguesa de Res","Martin's Potato Roll":"Pan de Papa Martin's","Shake Shack Sauce":"Salsa Shake Shack","Garlic Thyme Mashed Potatoes":"Puré de Papa con Ajo","Kanni Demi Sauce":"Salsa Demi Kanni","Roasted Oblique Cut Carrots":"Zanahorias Asadas","Scallion Bias Sliced":"Cebollín Diagonal","Short Rib":"Costilla Corta","Gulf Shrimp":"Camarón del Golfo","Scallion":"Cebollín","Spiced Creole Sauce":"Salsa Criolla","Capers":"Alcaparras","Caper Cream Cheese":"Queso Crema con Alcaparras","Cucumber":"Pepino","Dill":"Eneldo","Grape Tomatoes":"Tomates Uva","Lemon":"Limón","Pickled Red Onion":"Cebolla Roja Encurtida","Smoked Salmon":"Salmón Ahumado","Artichoke & Zucchini Relish":"Relish de Alcachofa","Marinara Sauce":"Salsa Marinara","Parmesan":"Parmesano","Spinach Ravioli":"Ravioli de Espinacas","Basil Pesto":"Pesto de Albahaca","Cherry Tomatoes":"Tomates Cherry","Three Cheese Manicotti":"Manicotti de Tres Quesos","Tomato Butter Sauce":"Salsa de Tomate y Mantequilla","Castelvetrano Olives":"Aceitunas Castelvetrano","Haricot Vert":"Ejotes Finos","Hard Boiled Egg":"Huevo Duro","Seared Chicken Breast":"Pechuga de Pollo Sellada","Tarragon Potato Salad":"Ensalada de Papa al Estragón","Brooklyn Cured Salami":"Salami Brooklyn","Cornichon":"Pepinillo Francés","Egg Halves":"Mitades de Huevo","Gran Cru Square":"Cuadrado Gran Cru","Grapes on Vine":"Uvas en Racimo","Whole Almonds":"Almendras Enteras"},
+  fr:{"Andouille Sausage":"Saucisse Andouille","Asparagus":"Asperges","Quiche":"Quiche","Swiss Cheese":"Fromage Suisse","Arugula":"Roquette","Chicken Salad":"Salade de Poulet","Croissant":"Croissant","Gran Queso":"Gran Queso","Sour Cherry Spread":"Confiture de Griotte","Coconut Chia Oatmeal":"Avoine Chia Coco","Mixed Berry Compote":"Compote de Fruits Rouges","Toasted Coconut":"Noix de Coco Grillée","Almonds":"Amandes","Chocolate":"Chocolat","Dried Apricot":"Abricot Séché","Gouda":"Gouda","Grapes":"Raisins","Green Apple":"Pomme Verte","Red Apple":"Pomme Rouge","Sharp Cheddar":"Cheddar Fort","Gran Queso Wedge":"Coin Gran Queso","Smoked Turkey Breast":"Poitrine de Dinde Fumée","Sweet Grain Mustard":"Moutarde à l'Ancienne","Brioche Bun":"Pain Brioché","Dijon Mayo":"Mayonnaise Dijonnaise","Roma Tomato":"Tomate Roma","Fresh Mozzarella":"Mozzarella Fraîche","Pesto Mayo":"Mayonnaise Pesto","Cinnamon Maple Butter":"Beurre Cannelle-Érable","French Toast":"Pain Perdu","Orange Mascarpone":"Mascarpone Orange","Strawberry Compote":"Compote de Fraises","Bechamel Sauce":"Sauce Béchamel","Extra Virgin Olive Oil":"Huile d'Olive Vierge Extra","Italian Parsley":"Persil Italien","Stuffed Piquillo Peppers":"Poivrons Piquillo Farcis","Toasted Garlic Bomba Rice":"Riz Bomba à l'Ail","Grits":"Semoule","Pork & Beef Meatballs":"Boulettes Porc et Bœuf","Ricotta":"Ricotta","Pisto Manchego":"Pisto Manchego","Spanish Omelet":"Omelette Espagnole","Greek Yogurt":"Yaourt Grec","Pecan Granola":"Granola aux Noix de Pécan","American Cheese":"Fromage Américain","Beef Patty":"Steak Haché","Martin's Potato Roll":"Pain de Pomme de Terre","Shake Shack Sauce":"Sauce Shake Shack","Garlic Thyme Mashed Potatoes":"Purée Ail et Thym","Kanni Demi Sauce":"Sauce Demi Kanni","Roasted Oblique Cut Carrots":"Carottes Rôties","Scallion Bias Sliced":"Ciboulette en Biais","Short Rib":"Côte Courte","Gulf Shrimp":"Crevettes du Golfe","Scallion":"Ciboulette","Spiced Creole Sauce":"Sauce Créole","Capers":"Câpres","Caper Cream Cheese":"Fromage Frais aux Câpres","Cucumber":"Concombre","Dill":"Aneth","Grape Tomatoes":"Tomates Cerises","Lemon":"Citron","Pickled Red Onion":"Oignon Rouge Mariné","Smoked Salmon":"Saumon Fumé","Artichoke & Zucchini Relish":"Relish Artichaut","Marinara Sauce":"Sauce Marinara","Parmesan":"Parmesan","Spinach Ravioli":"Ravioli aux Épinards","Basil Pesto":"Pesto Basilic","Cherry Tomatoes":"Tomates Cerises","Three Cheese Manicotti":"Manicotti 3 Fromages","Tomato Butter Sauce":"Sauce Tomate Beurre","Castelvetrano Olives":"Olives Castelvetrano","Haricot Vert":"Haricots Verts","Hard Boiled Egg":"Œuf Dur","Seared Chicken Breast":"Blanc de Poulet Poêlé","Tarragon Potato Salad":"Pommes de Terre à l'Estragon","Brooklyn Cured Salami":"Salami Brooklyn","Cornichon":"Cornichon","Egg Halves":"Demi-œufs","Gran Cru Square":"Carré Gran Cru","Grapes on Vine":"Raisins en Grappe","Whole Almonds":"Amandes Entières"},
+  fa:{"Andouille Sausage":"سوسیس آندوی","Asparagus":"مارچوبه","Quiche":"کیش","Swiss Cheese":"پنیر سوئیسی","Arugula":"رکولا","Chicken Salad":"سالاد مرغ","Croissant":"کروسان","Gran Queso":"گران کسو","Sour Cherry Spread":"مربای گیلاس ترش","Coconut Chia Oatmeal":"بلغور چیا نارگیل","Mixed Berry Compote":"کمپوت توت مخلوط","Toasted Coconut":"نارگیل برشته","Almonds":"بادام","Chocolate":"شکلات","Dried Apricot":"زردآلو خشک","Gouda":"گودا","Grapes":"انگور","Green Apple":"سیب سبز","Red Apple":"سیب قرمز","Sharp Cheddar":"چدار تند","Gran Queso Wedge":"گوه گران کسو","Smoked Turkey Breast":"سینه بوقلمون دودی","Sweet Grain Mustard":"خردل دانه‌دار","Brioche Bun":"نان بریوش","Dijon Mayo":"مایونز دیژون","Roma Tomato":"گوجه روما","Fresh Mozzarella":"موزارلا تازه","Pesto Mayo":"مایونز پستو","Cinnamon Maple Butter":"کره دارچین و افرا","French Toast":"نان فرانسوی","Orange Mascarpone":"ماسکارپونه پرتقال","Strawberry Compote":"کمپوت توت‌فرنگی","Bechamel Sauce":"سس بشامل","Extra Virgin Olive Oil":"روغن زیتون فرابکر","Italian Parsley":"جعفری ایتالیایی","Stuffed Piquillo Peppers":"فلفل پیکیو پر","Toasted Garlic Bomba Rice":"برنج بومبا با سیر برشته","Grits":"سمولینا","Pork & Beef Meatballs":"کوفته گوشت","Ricotta":"ریکوتا","Pisto Manchego":"پیستو مانچگو","Spanish Omelet":"املت اسپانیایی","Greek Yogurt":"ماست یونانی","Pecan Granola":"گرانولا گردوی پکان","American Cheese":"پنیر آمریکایی","Beef Patty":"کتلت گوشت گاو","Martin's Potato Roll":"نان سیب‌زمینی مارتین","Shake Shack Sauce":"سس شیک شک","Garlic Thyme Mashed Potatoes":"پوره سیر و آویشن","Kanni Demi Sauce":"سس دمی کانی","Roasted Oblique Cut Carrots":"هویج کبابی مورب","Scallion Bias Sliced":"پیازچه مورب","Short Rib":"دنده کوتاه","Gulf Shrimp":"میگوی خلیج","Scallion":"پیازچه","Spiced Creole Sauce":"سس کرئول تند","Capers":"کپر","Caper Cream Cheese":"پنیر خامه‌ای با کپر","Cucumber":"خیار","Dill":"شوید","Grape Tomatoes":"گوجه انگوری","Lemon":"لیمو","Pickled Red Onion":"پیاز قرمز ترشی","Smoked Salmon":"سالمون دودی","Artichoke & Zucchini Relish":"رلیش کنگر و کدو","Marinara Sauce":"سس ماریناره","Parmesan":"پارمزان","Spinach Ravioli":"راویولی اسفناج","Basil Pesto":"پستو ریحان","Cherry Tomatoes":"گوجه گیلاسی","Three Cheese Manicotti":"مانیکوتی سه پنیر","Tomato Butter Sauce":"سس گوجه کره","Castelvetrano Olives":"زیتون کاستلوترانو","Haricot Vert":"لوبیا سبز ریز","Hard Boiled Egg":"تخم‌مرغ آب‌پز","Seared Chicken Breast":"سینه مرغ کبابی","Tarragon Potato Salad":"سالاد سیب‌زمینی تاراگون","Brooklyn Cured Salami":"سالامی بروکلین","Cornichon":"خیار شور فرانسوی","Egg Halves":"نیمه تخم‌مرغ","Gran Cru Square":"مربع گران کرو","Grapes on Vine":"انگور دسته","Whole Almonds":"بادام کامل"}
+};
+
+const UI = {
+  en:{s1:"Select Meal",s3:"Set dates made for each container",search:"Search meals...",copyBtn:"Copy All",toastCopied:"Copied!",toastSelect:"Select a meal first",preview:"Preview",noData:"Tap a meal above to get started",back:"Back",hot:"🔥 Hot",cold:"❄️ Cold",addDate:"+ Add container"},
+  es:{s1:"Seleccionar Plato",s3:"Establecer fechas para cada contenedor",search:"Buscar plato...",copyBtn:"Copiar Todo",toastCopied:"¡Copiado!",toastSelect:"Selecciona un plato",preview:"Vista previa",noData:"Toca un plato para comenzar",back:"Atrás",hot:"🔥 Caliente",cold:"❄️ Frío",addDate:"+ Agregar contenedor"},
+  fr:{s1:"Sélectionner Plat",s3:"Définir les dates pour chaque conteneur",search:"Rechercher...",copyBtn:"Tout Copier",toastCopied:"Copié!",toastSelect:"Sélectionnez un plat",preview:"Aperçu",noData:"Touchez un plat pour commencer",back:"Retour",hot:"🔥 Chaud",cold:"❄️ Froid",addDate:"+ Ajouter conteneur"},
+  fa:{s1:"انتخاب غذا",s3:"تعیین تاریخ برای هر ظرف",search:"جستجو...",copyBtn:"کپی همه",toastCopied:"کپی شد!",toastSelect:"ابتدا غذا را انتخاب کنید",preview:"پیش‌نمایش",noData:"یک غذا انتخاب کنید",back:"بازگشت",hot:"🔥 گرم",cold:"❄️ سرد",addDate:"+ افزودن ظرف"}
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let lang='en', theme='light', currentScreen='meal', selectedMeal=null;
+// allDates: { mealKey: { ingName: [{mode,customVal},...] } }
+let allDates={};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+const t = k => (UI[lang]||UI.en)[k] || UI.en[k] || k;
+const mealLabel = m => (lang!=='en' && MEAL_T[lang] && MEAL_T[lang][m]) || m;
+const ingLabel  = i => (lang!=='en' && ING_T[lang]  && ING_T[lang][i])  || i;
+
+function todayStr()     { return fmtDate(new Date()); }
+function yesterdayStr() { const d=new Date(); d.setDate(d.getDate()-1); return fmtDate(d); }
+function fmtDate(d)     { const p=n=>String(n).padStart(2,'0'); return`${p(d.getMonth()+1)}/${p(d.getDate())}/${d.getFullYear()}`; }
+function isoToDisplay(s){ if(!s)return''; const[y,m,d]=s.split('-'); return`${m}/${d}/${y}`; }
+function resolveDate(e) {
+  if(e.mode==='today')     return todayStr();
+  if(e.mode==='yesterday') return yesterdayStr();
+  if(e.mode==='custom'&&e.customVal) return isoToDisplay(e.customVal);
+  return '';
+}
+
+function mealDates(meal){ return allDates[meal] || {}; }
+function setMealDates(meal, obj){ allDates[meal] = obj; }
+
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function toggleTheme(){
+  theme = theme==='light'?'dark':'light';
+  document.body.setAttribute('data-theme', theme);
+  document.getElementById('theme-btn').textContent = theme==='dark'?'☀️':'🌙';
+  save();
+}
+
+// ── LANGUAGE ──────────────────────────────────────────────────────────────────
+function setLang(l){
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b=>{
+    const txt=b.textContent.trim();
+    b.classList.toggle('active', txt===l.toUpperCase()||(l==='fa'&&txt==='فا'));
+  });
+  applyLabels();
+  renderMeals();
+  if(currentScreen==='dates') renderDateCards();
+}
+
+function applyLabels(){
+  document.getElementById('lbl-s1').textContent    = t('s1');
+  document.getElementById('lbl-s3').textContent    = t('s3');
+  document.getElementById('meal-search').placeholder = t('search');
+  document.getElementById('copy-label').textContent = t('copyBtn');
+  document.getElementById('lbl-preview').textContent= t('preview');
+  document.getElementById('lbl-hot').textContent    = t('hot');
+  document.getElementById('lbl-cold').textContent   = t('cold');
+  document.getElementById('lbl-back').textContent   = t('back');
+  if(currentScreen==='meal') document.getElementById('summary-box') && updatePreview();
+}
+
+// ── SCREENS ───────────────────────────────────────────────────────────────────
+function goToScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  currentScreen = name;
+  window.scrollTo(0,0);
+  if(name==='dates') renderDateCards();
+  save();
+}
+
+// ── MEALS ─────────────────────────────────────────────────────────────────────
+function renderMeals(filter){
+  const gridC = document.getElementById('meal-grid-cold');
+  const gridH = document.getElementById('meal-grid-hot');
+  gridC.innerHTML=''; gridH.innerHTML='';
+
+  const f = filter ? m=>m.toLowerCase().includes(filter.toLowerCase()) : ()=>true;
+  Object.keys(MEALS).filter(f).forEach(meal=>{
+    const hasData = !!(allDates[meal] && Object.keys(allDates[meal]).length);
+    const btn = document.createElement('button');
+    btn.className='pill meal-pill';
+    btn.innerHTML = `${MEALS[meal].emoji} ${mealLabel(meal)}` + (hasData?'<span class="unsaved-dot"></span>':'');
+    btn.onclick = ()=>selectMeal(meal);
+    (COLD_MEALS.has(meal) ? gridC : gridH).appendChild(btn);
+  });
+}
+
+function filterMeals(){ renderMeals(document.getElementById('meal-search').value); }
+
+function selectMeal(meal){
+  selectedMeal = meal;
+
+  // Auto-initialize all containers with "today" if not yet set
+  if(!allDates[meal]){
+    const init={};
+    MEALS[meal].items.forEach(ing=>{ init[ing]=[{mode:'today',customVal:''}]; });
+    setMealDates(meal, init);
+  }
+
+  document.getElementById('dates-meal-title').textContent = `${MEALS[meal].emoji} ${mealLabel(meal)}`;
+  goToScreen('dates');
+}
+
+// ── DATE CARDS ────────────────────────────────────────────────────────────────
+function renderDateCards(){
+  if(!selectedMeal) return;
+  const c = document.getElementById('date-cards');
+  c.innerHTML='';
+  const dates = mealDates(selectedMeal);
+
+  MEALS[selectedMeal].items.forEach(ing=>{
+    if(!dates[ing]) dates[ing]=[{mode:'today',customVal:''}];
+    const entries = dates[ing];
+
+    const card = document.createElement('div');
+    card.className='card';
+    const nm = document.createElement('span');
+    nm.className='card-ing-name';
+    nm.textContent = ingLabel(ing);
+    card.appendChild(nm);
+
+    entries.forEach((entry,i)=>{ card.appendChild(buildDateRow(ing,entry,i,entries.length)); });
+
+    const addBtn = document.createElement('button');
+    addBtn.className='add-date-btn';
+    addBtn.textContent = t('addDate');
+    addBtn.onclick=()=>{
+      const d=mealDates(selectedMeal);
+      d[ing].push({mode:'today',customVal:''});
+      setMealDates(selectedMeal,d);
+      renderDateCards(); save();
+    };
+    card.appendChild(addBtn);
+    c.appendChild(card);
+  });
+
+  setMealDates(selectedMeal, dates);
+  updatePreview();
+}
+
+function buildDateRow(ing, entry, idx, total){
+  // Wrapper so date input can go below the buttons inside the card
+  const wrap = document.createElement('div');
+  wrap.style.cssText='margin-bottom:4px;';
+
+  const row = document.createElement('div');
+  row.className='date-item';
+
+  // Today
+  const tb = document.createElement('button');
+  tb.className='qdate-btn'+(entry.mode==='today'?' chosen':'');
+  tb.textContent = t('today')||'Today';
+  tb.onclick=()=>{ const d=mealDates(selectedMeal); d[ing][idx]={mode:'today',customVal:''}; setMealDates(selectedMeal,d); renderDateCards(); save(); };
+  row.appendChild(tb);
+
+  // Yesterday
+  const yb = document.createElement('button');
+  yb.className='qdate-btn'+(entry.mode==='yesterday'?' chosen':'');
+  yb.textContent = t('yesterday')||'Yesterday';
+  yb.onclick=()=>{ const d=mealDates(selectedMeal); d[ing][idx]={mode:'yesterday',customVal:''}; setMealDates(selectedMeal,d); renderDateCards(); save(); };
+  row.appendChild(yb);
+
+  // Pick date button
+  const pb = document.createElement('button');
+  const cusLabel = (entry.mode==='custom'&&entry.customVal) ? isoToDisplay(entry.customVal) : (t('pickDate')||'Pick date');
+  pb.className='qdate-btn'+(entry.mode==='custom'?' chosen':'');
+  pb.textContent = cusLabel;
+
+  // Remove button (only when multiple containers)
+  if(total>1){
+    const rm=document.createElement('button');
+    rm.className='remove-date-btn';
+    rm.textContent='×';
+    rm.style.marginLeft='auto';
+    rm.onclick=()=>{ const d=mealDates(selectedMeal); d[ing].splice(idx,1); if(d[ing].length===0)d[ing]=[{mode:'today',customVal:''}]; setMealDates(selectedMeal,d); renderDateCards(); save(); };
+    row.appendChild(pb);
+    row.appendChild(rm);
+  } else {
+    row.appendChild(pb);
+  }
+
+  // Date input — full width below the buttons
+  const di = document.createElement('input');
+  di.type='date';
+  di.className='date-pick-input'+(entry.mode==='custom'?' chosen':' hidden');
+  di.value = entry.customVal||'';
+  pb.onclick=()=>{ di.classList.toggle('hidden'); if(!di.classList.contains('hidden')) try{di.showPicker();}catch(e){} };
+  di.onchange=e=>{ const d=mealDates(selectedMeal); d[ing][idx]={mode:'custom',customVal:e.target.value}; setMealDates(selectedMeal,d); renderDateCards(); save(); };
+
+  wrap.appendChild(row);
+  wrap.appendChild(di);
+  return wrap;
+}
+
+// ── OUTPUT ────────────────────────────────────────────────────────────────────
+function buildOutput(){
+  if(!selectedMeal) return '';
+  const dates = mealDates(selectedMeal);
+  // Always English for copy
+  const parts = [`Meal: ${selectedMeal}`];
+  MEALS[selectedMeal].items.forEach(ing=>{
+    const entries = dates[ing]||[];
+    const resolved = entries.map(e=>resolveDate(e)).filter(Boolean);
+    if(resolved.length===0)      parts.push(`| ${ing}: —`);
+    else if(resolved.length===1) parts.push(`| ${ing}: ${resolved[0]}`);
+    else parts.push(`| ${ing}: `+resolved.map((d,i)=>`[${i+1}] ${d}`).join(' '));
+  });
+  return parts.join('  ');
+}
+
+function updatePreview(){
+  const txt = buildOutput();
+  document.getElementById('summary-box').textContent = txt || t('noData');
+}
+
+function copyOutput(){
+  const txt = buildOutput();
+  if(!txt){ showToast(t('toastSelect')); return; }
+  navigator.clipboard.writeText(txt).then(flashCopied).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); flashCopied();
+  });
+}
+
+function flashCopied(){
+  const btn=document.getElementById('copy-btn'), lbl=document.getElementById('copy-label');
+  btn.classList.add('copied'); lbl.textContent='✓ '+t('toastCopied');
+  showToast(t('toastCopied'));
+  setTimeout(()=>{ btn.classList.remove('copied'); lbl.textContent=t('copyBtn'); }, 2200);
+}
+
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'), 2000);
+}
+
+// ── PERSISTENCE ───────────────────────────────────────────────────────────────
+function save(){
+  try{
+    sessionStorage.setItem('lblState', JSON.stringify({
+      selectedMeal, allDates, currentScreen, lang, theme
+    }));
+  }catch(e){}
+}
+
+(function restore(){
+  try{
+    const raw = sessionStorage.getItem('lblState');
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.theme){ theme=s.theme; document.body.setAttribute('data-theme',theme); document.getElementById('theme-btn').textContent=theme==='dark'?'☀️':'🌙'; }
+    if(s.lang) lang=s.lang;
+    if(s.allDates) allDates=s.allDates;
+    if(s.selectedMeal) selectedMeal=s.selectedMeal;
+    if(s.currentScreen) currentScreen=s.currentScreen;
+  }catch(e){}
+})();
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+renderMeals();
+applyLabels();
+setLang(lang);
+
+// Restore screen
+if(currentScreen==='dates' && selectedMeal){
+  document.getElementById('dates-meal-title').textContent = `${MEALS[selectedMeal].emoji} ${mealLabel(selectedMeal)}`;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-dates').classList.add('active');
+  renderDateCards();
+}
+
+// Add "today" and "yesterday" to UI translations (needed after lang change)
+Object.assign(UI.en, {today:'Today', yesterday:'Yesterday', pickDate:'Pick date'});
+Object.assign(UI.es, {today:'Hoy', yesterday:'Ayer', pickDate:'Elegir fecha'});
+Object.assign(UI.fr, {today:"Aujourd'hui", yesterday:'Hier', pickDate:'Choisir date'});
+Object.assign(UI.fa, {today:'امروز', yesterday:'دیروز', pickDate:'انتخاب تاریخ'});
+</script>
+</body>
+</html>
